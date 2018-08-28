@@ -1,0 +1,34 @@
+#需要修改所有含有ip的地方，下面的8行改为当前节点名称,9,10行改为当前节点ip，11行三个ip顺序改为etcd集群部署的三台节点ip
+version: '2.1'
+services:
+  etcd0:
+    container_name: etcd
+    image: gcr.io/google_containers/etcd-amd64:3.2.17
+    command: |
+            etcd --name infra0
+            --initial-advertise-peer-urls http://172.18.9.109:2380
+            --advertise-client-urls http://172.18.9.109:2379,http://172.18.9.109:2380
+            --initial-cluster infra0=http://172.18.9.109:2380,infra1=http://172.18.9.110:2380,infra2=http://172.18.9.111:2380
+            --listen-peer-urls http://0.0.0.0:2380
+            --listen-client-urls http://0.0.0.0:2379
+            --data-dir /etcd-data.etcd
+            --initial-cluster-token dXvkqAqXYJ74Z7ny2wVw
+            --initial-cluster-state new
+    restart: always
+    volumes:
+        - /data/etcd-data.etcd:/etcd-data.etcd
+    network_mode: "host"
+#  keepalived: 
+#    image: alterway/keepalived:1.2
+#    container_name: keepalived
+#    network_mode: "host"
+#    restart: always
+#    environment:
+#      - VIRTUAL_IP='172.18.9.88'
+#      - VIRTUAL_ROUTER_ID='51' #在所有节点中必须相同
+#      - INTERFACE='eth0' #界面设置虚拟IP
+#      - PRIORITY='100' #master上101，备份100
+#      - PASSWORD='topsecret'
+#      - CONTAINERS_TO_CHECK="etcd" #容器名称列表检查运行状况，由单个空格分隔
+#      - CHECK_FALL='1' #要求KO失败
+#      - CHECK_RISE='1' #要求X成功OK

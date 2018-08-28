@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    k8s-app: cnpmjs
+  name: cnpmjs
+  namespace: baishan-oss
+spec:
+  restartPolicy: OnFailure
+  containers:
+  - name: cnpmjs
+    image: hbrls/cnpmjs:0.0.5
+    ports:
+    - containerPort: 7001
+      protocol: TCP
+    livenessProbe:
+      httpGet:
+        scheme: HTTP
+        path: /
+        port: 7001
+    volumeMounts:
+    # - name: cnpmjs-pvc
+    #   mountPath: /var/app/cnpmjs.org/nfs
+    #   subPath: nfs
+    # - name: cnpmjs-pvc
+    #   mountPath: /var/app/cnpmjs.org/downloads
+    #   subPath: downloads
+    # - name: cnpmjs-pvc
+    #   mountPath: /var/app/cnpmjs.org/logs
+    #   subPath: logs
+    - mountPath: /var/app/cnpmjs.org/config/config.js
+      name: config
+      subPath: config.js
+    - name: cnpmjs-pvc
+      mountPath: /var/www/.cnpmjs.org
+  volumes:
+    - name: cnpmjs-pvc
+      persistentVolumeClaim:
+        claimName: cnpmjs
+    - name: config
+      configMap:
+        name: cnpmjs-config
+        items:
+        - key: config.js 
+          path: config.js
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    k8s-app: cnpmjs
+  name: cnpmjs
+  namespace: baishan-oss
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 7001
+  selector:
+    k8s-app: cnpmjs
+
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: cnpmjs
+  namespace: baishan-oss
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/secure-backends: "false"
+spec:
+  tls:
+   - secretName: xxxx-tls
+  rules:
+   - host: xxxx.com
+     http:
+      paths:
+      - path: /
+        backend:
+          serviceName: cnpmjs
+          servicePort: 80
